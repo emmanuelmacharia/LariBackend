@@ -29,7 +29,7 @@ class UserManager(BaseUserManager):
 
         return True
 
-    def create_user(self, first_name=None, last_name=None, password=None, email=None, phone_number=None, is_active=True, is_staff=False, is_superuser=False):
+    def create_user(self, first_name=None, last_name=None, password=None, email=None, phone_number=None, is_active=True, is_superuser=False):
         """
         Creates and returns a user with an email, first_name, lastname, phone_number and password
         """
@@ -50,7 +50,6 @@ class UserManager(BaseUserManager):
 
         user.is_active = is_active
         user.is_superuser = is_superuser
-        user.is_staff = is_staff
         user.set_password(password)
         user.save()
         return user
@@ -59,11 +58,7 @@ class UserManager(BaseUserManager):
         """
         Creates and returns the superuser with all the required fields
         """
-        # first_name = first_name
-        # last_name = last_name
-        # email = email
-        # phone_number = phone_number
-        # password = password
+        print('were calling the custom one')
         validated_user = self.validate_user(
             first_name, last_name, email, phone_number, password)
 
@@ -82,7 +77,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
-    '''creates a custom user model for Luna'''
+    '''creates a custom user model for Lari'''
     userId = models.AutoField(primary_key=True, editable=False, unique=True)
     first_name = models.CharField(max_length=255, default=False)
     last_name = models.CharField(max_length=255, default=False)
@@ -106,7 +101,6 @@ class User(AbstractBaseUser):
     #     # Simplest possible answer: Yes, always
     #     return True
 
-
     @property
     def get_email(self):
         '''property to return the email'''
@@ -119,9 +113,9 @@ class User(AbstractBaseUser):
         return self.is_admin
 
     @property
-    def is_verified(self):
+    def is_email_verified(self):
         '''returns whether the user's email has been verified'''
-        return self.is_verified
+        return self.user_verified
 
     class Meta:
         verbose_name = 'User'
