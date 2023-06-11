@@ -33,7 +33,6 @@ class UserManager(BaseUserManager):
         """
         Creates and returns a user with an email, first_name, lastname, phone_number and password
         """
-        print('called')
         # first_name = first_name
         # last_name = last_name
         # email = email
@@ -58,7 +57,6 @@ class UserManager(BaseUserManager):
         """
         Creates and returns the superuser with all the required fields
         """
-        print('were calling the custom one')
         validated_user = self.validate_user(
             first_name, last_name, email, phone_number, password)
 

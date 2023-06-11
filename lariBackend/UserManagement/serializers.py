@@ -1,6 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User
 from core.cache_management.cache_management import *
@@ -116,3 +118,49 @@ class UserVerificationSerializer(serializers.ModelSerializer):
         instance.user_verified = True
         instance.save()
         return instance
+
+class LoginSerializer(TokenObtainPairSerializer):
+    '''custom serializer class for login and token generation'''
+
+    class Meta:
+        model = User
+
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Add custom parameters to the token payload
+        token['userId'] = user.userId
+
+        return token
+
+
+    def get_user(self, email):
+        user = ''
+        try:
+            user =  User.objects.get(email=email)
+        except User.DoesNotExist:
+            user = None
+        return user
+    
+    def check_for_email_verification(self, user) -> bool:
+        #TODO: verify that the user trying to log in has their email verified
+        print(user.user_verified)
+        return True
+
+    def validate(self, attrs):
+        # import pdb; pdb.set_trace()
+        # is_verified = self.check_for_email_verification(self.user)
+        user_email = attrs['email']
+        user =self.get_user(user_email)
+        is_verified = True
+
+        if not is_verified:
+            #TODO: send the user a magic link to their email; create verification api  
+            pass
+
+        data = super().validate(attrs)
+        refresh = self.get_token(self.user)
+        data['refresh'] = str(refresh)
+        data['access']= str(refresh.access_token)
+        return data
