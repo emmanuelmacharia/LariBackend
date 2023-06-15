@@ -12,6 +12,7 @@ def get_data_from_cache(key: str):
 
 def set_data_to_cache(key: str, value, timeout):
     """Responsible for adding data to the cache"""
+    print('Setting data to cache', key, value)
     data_already_cached = get_data_from_cache(key)
 
     if not timeout:
