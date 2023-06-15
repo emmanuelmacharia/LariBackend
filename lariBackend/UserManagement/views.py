@@ -5,14 +5,17 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.permissions import AllowAny
 from django.conf import settings
-
-from .models import UserManager
-from .serializers import UserRegistrationSerializer, LoginSerializer
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from .serializers import UserRegistrationSerializer, LoginSerializer, UserVerificationSerializer
+from .models import User
 
 class Register(APIView):
     '''registration to the application'''
     serializer_class = UserRegistrationSerializer
 
+    # registration_param_config = openapi.Parameter()
+    @swagger_auto_schema(operational_description="creating a user")
     def post(self, request):
         '''api to create a user'''
         serializer = self.serializer_class(data=request.data)
@@ -23,12 +26,28 @@ class Register(APIView):
             error_message = "Email or phone number already exists"
             return Response(error_message, status=status.HTTP_400_BAD_REQUEST)
         user_data = serializer.data
+        user = User.objects.get(email=user_data['email'])
+        print(user.first_name)
+        user_verification = UserVerificationSerializer()
+        user_verification.create_verification_token(user, request)
         return Response(user_data, status=status.HTTP_201_CREATED)
 
 
 class VerifyUser(APIView):
     '''verifies a user's email'''
-    pass    
+    serializer_class = UserVerificationSerializer
+
+    def get(self, request): 
+        '''responsible for getting a new email sent to the client'''
+        token = request.GET.get('token')
+
+        pass
+
+    def post(self, request):
+        pass
+
+    def put(self, request):
+        pass
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

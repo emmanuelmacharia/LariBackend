@@ -1,11 +1,14 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.sites.shortcuts import get_current_site
+from django.urls import reverse
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User
 from core.cache_management.cache_management import *
+from core.email_managent.send_email import *
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -80,10 +83,30 @@ class UserVerificationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['userId', 'token']
 
-    def create_verification_token(self, data):
+    def create_verification_token(self, data, request):
         '''creates the verification token and adds it to the cache'''
         # avoid creating two tokens from the same user; instead, check whether the user already has a valid token in cache
-        pass
+        try:
+            print('Generating email verification token')
+            token = RefreshToken.for_user(data)
+            print(token, type(data))
+        except:
+            return {'responseObject': 'Could not generate verification token', 'successful': False}
+        
+        try:
+            print('Set token to cache')
+            set_data_to_cache(data.email, token, 300)
+        except:
+            print('Could not set token to cache')
+
+        try:
+            print('sending email')
+            email_data = self.createEmail(data, request, token, 300)
+            print('Email data', email_data)
+            email_handler = EmailHandler()
+            email_handler.send_email_to_user(email_data)
+        except:
+            print('could not send email')
 
     def retreive_verification_token(self) -> str:
         '''fetches the verification token from the db'''
@@ -118,6 +141,44 @@ class UserVerificationSerializer(serializers.ModelSerializer):
         instance.user_verified = True
         instance.save()
         return instance
+    
+    def createEmail(self, data, request, token, expiry):
+        print('creating email data')
+        relative_link = reverse('verify-user')
+        abs_url = f'http://{get_current_site(request).domain}{relative_link}?token={token}'
+        email_body =f"""\
+        <html>
+            <head></head>
+            <body>
+                <p>
+                    Hi {data.first_name},
+                </p>
+                <p>
+                    Thank you for signing up for Lari Cost Management. We are excited to have you as part of our community. <br />
+                    To ensure the security of your account and the accuracy of your contact information, we kindly request that you verify your email address. <br />
+                    To complete the email verification process, click on this <a href="{abs_url}">verification link </a> <br />
+                     Please note that this email verification link will expire in {expiry/60} minutes. 
+                </p>
+                <p>
+                    If the link has expired, you can request for a new verification link by navigating using the link and clicking the 'Request New Link' button. <br />
+                     We want to emphasize that verifying your email address is crutial for account security, account recovery, and receiving important notifications related to your Lari account.
+                </p>
+                <p>
+                     If you did not sign up with us, please disregard this email.
+                </p>
+                <br />
+                <span>Regards,</span><br/>
+                <span>Lari dev team <span>
+            </body>
+        </html>
+        """
+        email_obj = {
+            'subject': "Email Verification - Please Confirm Your Email Address",
+            "body": email_body,
+            'email_list': [data.email]
+        }
+
+        return email_obj
 
 class LoginSerializer(TokenObtainPairSerializer):
     '''custom serializer class for login and token generation'''
