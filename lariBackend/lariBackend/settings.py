@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -38,9 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'UserManagement',
     'rest_framework',
-    'rest_framework_jwt',
+    'drf_yasg',
+    'UserManagement',
 ]
 
 MIDDLEWARE = [
@@ -162,3 +162,15 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'UserManagement.User'
+
+
+# Email configuration
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST=os.getenv('GMAIL_SMTP_HOST')
+EMAIL_PORT=os.getenv('GMAIL_SMTP_PORT_TLS')
+EMAIL_HOST_USER=os.getenv('EMAIL_USERNAME')
+EMAIL_HOST_PASSWORD=os.getenv('EMAIL_PASSWORD')
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
