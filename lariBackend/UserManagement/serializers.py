@@ -1,10 +1,13 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sites.shortcuts import get_current_site
+from django.conf import settings
 from django.urls import reverse
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+import jwt
+
 
 from .models import User
 from core.cache_management.cache_management import *
@@ -77,60 +80,107 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return password1 == password2
 
 
-class UserVerificationSerializer(serializers.ModelSerializer):
+class UserVerificationSerializer(serializers.Serializer):
     '''Email verification serializer class'''
-    class Meta:
-        model = User
-        fields = ['userId', 'token']
+
+    token = serializers.CharField()
 
     def create_verification_token(self, data, request):
         '''creates the verification token and adds it to the cache'''
         # avoid creating two tokens from the same user; instead, check whether the user already has a valid token in cache
         try:
-            print('Generating email verification token')
+            print('Generating email verification token', data)
             token = RefreshToken.for_user(data)
-            print(token, type(data))
         except:
             return {'responseObject': 'Could not generate verification token', 'successful': False}
         
         try:
             print('Set token to cache')
-            set_data_to_cache(data.email, token, 300)
+            set_data_to_cache(data.email, str(token), 300)
         except:
             print('Could not set token to cache')
 
         try:
-            print('sending email')
             email_data = self.createEmail(data, request, token, 300)
-            print('Email data', email_data)
             email_handler = EmailHandler()
             email_handler.send_email_to_user(email_data)
         except:
             print('could not send email')
 
-    def retreive_verification_token(self) -> str:
+    def retreive_verification_token(self, userEmail) -> str:
         '''fetches the verification token from the db'''
-        verification_cache_response = get_data_from_cache('verification_token')
+        verification_cache_response = get_data_from_cache(userEmail)
         verification_token = ''
 
         if not verification_cache_response:
-            return 'Could not retrieve data from cache'
+            return {'successful': False, 'message': 'Could not retrieve data from cache'}
 
         if verification_cache_response['successful']:
             verification_token = verification_cache_response['response']
 
-        return verification_token
+        return {'successful': True, 'responseObject': verification_token}
+    
+    def compare_tokens(self, user_token, cache_token):
+        '''abstracts token comparison to this method'''
+        decoded_user_token = jwt.decode(
+                user_token,
+                settings.SECRET_KEY,
+                algorithms=['HS256'],
+                audience=settings.SIMPLE_JWT['AUDIENCE'], 
+                issuer=settings.SIMPLE_JWT['ISSUER'],
+                verify=True)
+        decoded_cache_token = jwt.decode(
+                cache_token,
+                settings.SECRET_KEY,
+                algorithms=['HS256'],
+                audience=settings.SIMPLE_JWT['AUDIENCE'], 
+                issuer=settings.SIMPLE_JWT['ISSUER'],
+                verify=True)
+        
+        if decoded_user_token['exp'] != decoded_cache_token['exp']:
+            return False
+        if decoded_user_token['aud'] != decoded_cache_token['aud']:
+            return False
+        if decoded_user_token['iss'] != decoded_cache_token['iss']:
+            return False
+        if decoded_user_token['user_id'] != decoded_cache_token['user_id']:
+            return False
+        return True
 
     def verify_tokens(self, data) -> bool:
         '''verifies the tokens sent for email verification'''
-        usertoken = data.get('token')
-        createdtoken = self.retreive_verification_token()
+        user_token = data.get('token')
+        user = ''
 
-        return usertoken == createdtoken
+        try:
+            payload = jwt.decode(
+                user_token,
+                settings.SECRET_KEY,
+                algorithms=['HS256'],
+                audience=settings.SIMPLE_JWT['AUDIENCE'], 
+                issuer=settings.SIMPLE_JWT['ISSUER'],
+                verify=True)
+            user = User.objects.get(userId= payload['user_id'])
+        except jwt.ExpiredSignatureError:
+            return {'successful': False, 'message': 'Expired signature error'}
+        except jwt.exceptions.DecodeError:
+            return {'successful': False, 'message': 'Invalid token'}
+        except jwt.InvalidAudienceError:
+            return {'successful': False, 'message': 'Invalid audience'}
+
+        try:
+            created_token = self.retreive_verification_token(user.email)
+            if not created_token['successful']:
+                return { 'successful': False, 'message': 'Invalid token'}
+            
+            if not self.compare_tokens(user_token, created_token['responseObject']):
+                return {'successful': False, 'message': 'Invalid token match from cache'}
+            return {'successful': True, 'message': 'Token is valid', 'user': user}
+        except:
+            return { 'successful': False, 'message': 'Invalid token'}
+
 
     def validate(self, data):
-        if not data['userId']:
-            return
         if not data['token']:
             return
         return data
@@ -143,7 +193,6 @@ class UserVerificationSerializer(serializers.ModelSerializer):
         return instance
     
     def createEmail(self, data, request, token, expiry):
-        print('creating email data')
         relative_link = reverse('verify-user')
         abs_url = f'http://{get_current_site(request).domain}{relative_link}?token={token}'
         email_body =f"""\

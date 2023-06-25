@@ -9,6 +9,7 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from .serializers import UserRegistrationSerializer, LoginSerializer, UserVerificationSerializer
 from .models import User
+from django.utils import timezone
 
 class Register(APIView):
     '''registration to the application'''
@@ -27,7 +28,6 @@ class Register(APIView):
             return Response(error_message, status=status.HTTP_400_BAD_REQUEST)
         user_data = serializer.data
         user = User.objects.get(email=user_data['email'])
-        print(user.first_name)
         user_verification = UserVerificationSerializer()
         user_verification.create_verification_token(user, request)
         return Response(user_data, status=status.HTTP_201_CREATED)
@@ -40,8 +40,23 @@ class VerifyUser(APIView):
     def get(self, request): 
         '''responsible for getting a new email sent to the client'''
         token = request.GET.get('token')
+        serializer = self.serializer_class(data={'token': token})
+        print(serializer)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.data
+        verified_token = self.serializer_class().verify_tokens(data)
 
-        pass
+        if not verified_token['successful']:
+            return Response(verified_token, status=status.HTTP_400_BAD_REQUEST)
+
+        user = verified_token['user']
+        if not user.user_verified:
+            user.user_verified = True
+            user.date_verified = timezone.now()
+            user.save()
+
+        return Response({'successful': True, 'message': 'Profile activated'})
+
 
     def post(self, request):
         pass
