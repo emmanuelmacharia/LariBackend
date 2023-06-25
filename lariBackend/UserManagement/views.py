@@ -59,6 +59,10 @@ class VerifyUser(APIView):
 
 
     def post(self, request):
+        '''Creates a new verification email'''
+        user = User.objects.get(email=user_data['email'])
+        user_verification = UserVerificationSerializer()
+        user_verification.create_verification_token(user, request)
         pass
 
     def put(self, request):
