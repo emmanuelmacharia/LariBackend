@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'UserManagement',
-    'Projects'
+    'Projects',
+    'ProjectPartnerManagement'
 ]
 
 MIDDLEWARE = [

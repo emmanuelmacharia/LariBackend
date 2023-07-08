@@ -7,7 +7,6 @@ def get_data_from_cache(key: str):
 
     if not cache_data:
         return None
-    print(cache_data)
     return {'successful': True,  'response': cache_data}
 
 

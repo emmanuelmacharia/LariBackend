@@ -41,7 +41,6 @@ class VerifyUser(APIView):
         '''responsible for getting a new email sent to the client'''
         token = request.GET.get('token')
         serializer = self.serializer_class(data={'token': token})
-        print(serializer)
         serializer.is_valid(raise_exception=True)
         data = serializer.data
         verified_token = self.serializer_class().verify_tokens(data)

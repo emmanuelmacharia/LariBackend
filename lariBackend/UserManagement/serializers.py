@@ -89,13 +89,11 @@ class UserVerificationSerializer(serializers.Serializer):
         '''creates the verification token and adds it to the cache'''
         # avoid creating two tokens from the same user; instead, check whether the user already has a valid token in cache
         try:
-            print('Generating email verification token', data)
             token = RefreshToken.for_user(data)
         except:
             return {'responseObject': 'Could not generate verification token', 'successful': False}
         
         try:
-            print('Set token to cache')
             set_data_to_cache(data.email, str(token), 300)
         except:
             print('Could not set token to cache')
@@ -255,12 +253,9 @@ class LoginSerializer(TokenObtainPairSerializer):
     
     def check_for_email_verification(self, user) -> bool:
         #TODO: verify that the user trying to log in has their email verified
-        print(user.user_verified)
         return True
 
     def validate(self, attrs):
-        # import pdb; pdb.set_trace()
-        # is_verified = self.check_for_email_verification(self.user)
         user_email = attrs['email']
         user =self.get_user(user_email)
         is_verified = True
