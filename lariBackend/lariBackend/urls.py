@@ -42,5 +42,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('api/profile/', include('UserManagement.urls')),
-    path('api/projects', include('Projects.urls')),
+    path('api/projects/', include('Projects.urls')),
 ]

@@ -66,20 +66,10 @@ class Project(models.Model):
 
     def save(self, *args, **kwargs):
         duration = relativedelta(self.estimated_end_date, self.estimated_start_date)
-        self.estimated_timeline = self.format_duration(duration)
+        self.estimated_timeline = f'{duration.days * 24} hours'
         super(Project, self).save(*args, **kwargs)
 
-    def format_duration(self, duration):
-        if duration.years >= 1:
-            timeline = f"{duration.years} year(s), {duration.months} month(s)"
-        elif duration.months >= 1:
-            timeline = f"{duration.months} month(s), {duration.weeks} week(s)"
-        elif duration.weeks >= 1:
-            timeline = f"{duration.weeks} month(s), {duration.days} day(s)"
-        else:
-            timeline = f"{duration.days} day(s)"
 
-        return timeline
 
 
 
