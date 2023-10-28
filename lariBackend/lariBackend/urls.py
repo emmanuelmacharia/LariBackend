@@ -43,4 +43,6 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('api/profile/', include('UserManagement.urls')),
     path('api/projects/', include('Projects.urls')),
+    path('api/invite/', include('InviteManagement.urls')),
+    path('api/partner/', include('ProjectPartnerManagement.urls'))
 ]

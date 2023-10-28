@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'UserManagement',
     'Projects',
-    'ProjectPartnerManagement'
+    'ProjectPartnerManagement',
+    'InviteManagement',
 ]
 
 MIDDLEWARE = [
@@ -124,7 +125,7 @@ REST_FRAMEWORK = {
 
 # jwt configuration
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "UPDATE_LAST_LOGIN": False,
