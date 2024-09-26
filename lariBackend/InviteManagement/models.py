@@ -1,3 +1,6 @@
+import datetime
+from django.utils import timezone
+import uuid
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
@@ -25,9 +28,16 @@ class Invite(models.Model):
     3. An invitor could only be someone already registered to the application - and has sufficient permissions in that project to do so
     """
 
-    INVITE_TYPE = {
+    WORKSPACE_TYPE = {
         ('Project', 'Project')
     }
+
+    class InviteStatus(models.IntegerChoices):
+        PENDING = 1, 'Pending'
+        ACCEPTED = 2, 'Accepted'
+        DECLINED = 3, 'Declined'
+        EXPIRED = 4, 'Expired'
+        CANCELLED = 5, 'Cancelled'
 
     INVITE_STATUS = {
         ('Pending', 'Pending'),
@@ -36,34 +46,45 @@ class Invite(models.Model):
         ('Expired', 'Expired'),
         ('Cancelled', 'Cancelled')
     }
-
-    id = models.AutoField(primary_key=True, editable=False, unique=True)
-    email = models.EmailField()
-    invite_type = models.CharField(choices=INVITE_TYPE, max_length=20)
-    invite_params = models.JSONField(default=default_json)
-    # invite_status = models.CharField(choices=INVITE_STATUS, max_length=10)
-    invite_Status = models.IntegerChoices("Status", "PENDING ACCEPTED DECLINED EXPIRED CANCELED")
-    email_sent = models.BooleanField(default=False)
-    created_on = models.DateTimeField(auto_now_add=True)
-    modified_on = models.DateTimeField(auto_now=True)
+    #uneditable fields
+    id = models.AutoField(primary_key=True, editable=False, unique=True) #
+    invite_uuid = models.UUIDField(editable=False, unique=True, default=uuid.uuid4)#
+    email_sent = models.BooleanField(default=False)#
+    created_on = models.DateTimeField(auto_now_add=True)#
+    modified_on = models.DateTimeField(auto_now=True)#
     invite_host = models.ForeignKey(
         User,
         on_delete=models.SET(get_sentinel_user),
         null=False,
         blank=False,
-        related_name='invitor_user_id'
-    )
-    reminder = models.BooleanField(default=False)
-    reminder_period = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(14)])
-    invite_expiry = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True)
-    reminder_count = models.PositiveIntegerField(default=0)
-    reminder_threshold = models.PositiveIntegerField(default=3,  validators=[MaxValueValidator(3)])
+        # related_name='invitor_user_id'
+    )#why would you want to update this?
+    workspace_id = models.IntegerField(null=False, blank=False) # cant change unless you change the project
+
+    # actionable changes
+    email = models.EmailField() ## trigger a new email
+    workspace_type = models.CharField(choices=WORKSPACE_TYPE, max_length=15) ## nothing? depends on the info on the email
+    invite_status = models.IntegerField(choices=InviteStatus.choices, default=InviteStatus.PENDING)
+    
+    # non actionable changes
+    invite_params = models.JSONField(default=default_json) ## nothing
+    reminder = models.BooleanField(default=False) ## nothing
+    reminder_period = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(14)]) ##nothing
+    invite_expiry = models.DateTimeField(auto_now=False, auto_now_add=False, null=True, blank=True) ## nothing
+    reminder_count = models.PositiveIntegerField(default=0) ## nothing
+    reminder_threshold = models.PositiveIntegerField(default=3,  validators=[MaxValueValidator(3)]) ## nothing
 
 
     def __str__(self):
         return f"""Invitee: {self.email} \n 
                         Invitor: {self.invite_host}
-                        Status: {self.invite_Status}
+                        Status: {self.invite_status}
                         email sent: {self.email_sent}
                         created on: {self.created_on}
                     """
+    
+    def save(self, *args, **kwargs):
+        '''adds expiry and status of the invite by default'''
+        self.invite_expiry = timezone.now()  + datetime.timedelta(days=14)
+        self.invite_status = 1
+        super(Invite, self).save(*args, **kwargs)

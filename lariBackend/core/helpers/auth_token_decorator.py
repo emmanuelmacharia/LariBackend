@@ -19,7 +19,8 @@ def auth_token_validator(f):
             if not isinstance(arg, Request):
                 continue
             user = arg.user
-            user_token = arg.headers.get('Authorization').split(' ')[1]
+            if arg.headers.get('Authorization'):
+                user_token = arg.headers.get('Authorization').split(' ')[1]
             break
         
         try:

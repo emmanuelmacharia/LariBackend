@@ -3,6 +3,7 @@ from django.conf import settings
 
 class EmailHandler:
     def send_email_to_user(self, data):
+        import pdb; pdb.set_trace()
         email = EmailMessage(subject=data['subject'], body=data['body'], from_email=settings.EMAIL_HOST_USER, to=data['email_list'])
         email.content_subtype = 'html'
         email.send()

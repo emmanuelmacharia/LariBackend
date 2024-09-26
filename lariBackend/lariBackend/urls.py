@@ -44,5 +44,6 @@ urlpatterns = [
     path('api/profile/', include('UserManagement.urls')),
     path('api/projects/', include('Projects.urls')),
     path('api/invite/', include('InviteManagement.urls')),
-    path('api/partner/', include('ProjectPartnerManagement.urls'))
+    path('api/partner/', include('ProjectPartnerManagement.urls')),
+    
 ]
