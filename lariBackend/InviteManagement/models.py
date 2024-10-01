@@ -85,6 +85,7 @@ class Invite(models.Model):
     
     def save(self, *args, **kwargs):
         '''adds expiry and status of the invite by default'''
-        self.invite_expiry = timezone.now()  + datetime.timedelta(days=14)
-        self.invite_status = 1
+        if not self.instance.pk:
+            self.invite_expiry = timezone.now()  + datetime.timedelta(days=14)
+            self.invite_status = 1
         super(Invite, self).save(*args, **kwargs)

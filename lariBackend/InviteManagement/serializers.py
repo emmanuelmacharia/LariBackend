@@ -47,26 +47,13 @@ class InviteSerializer(serializers.ModelSerializer):
     def create_mail(self, data):
         relative_link = reverse('invite')
 
-
 class UpdateInviteSerializer(serializers.ModelSerializer):
-    '''serializer for updating the Invite'''
+    '''handles updating invites (accepting and declining)'''
 
     class Meta:
         model = Invite
-        fields = (
-            'id', 'invite_uuid', 'email_sent', 'invite_host', 'workspace_id',
-            'email', 'workspace_type', 'invite_status', 'invite_params',
-              'reminder', 'reminder_period', 'invite_expiry', 'reminder_count',
-              'reminder_threshold', 'created_on', 'modified_on',
-              )
-        read_only_fields = ['id', 'invite_uuid', 'created_on', 'invite_host']
-
-    
-    def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        return representation
-
-
+        fields = '__all__'
+        read_only_fields = ['id', 'invite_uuid', 'created_on', 'invite_host', 'workspace_id', 'email', 'workspace_type']
 
     def validate_invite_details(self, invite):
         '''validates that the invite can be updated; return response object'''
@@ -98,7 +85,6 @@ class UpdateInviteSerializer(serializers.ModelSerializer):
         responseObj['is_valid'] = True
         return responseObj
 
-
     def validate_invite_expiry(self, invite):
         '''checks the expiry of the invite; returns True if expired'''
         now = datetime.now(pytz.UTC)
@@ -120,5 +106,4 @@ class UpdateInviteSerializer(serializers.ModelSerializer):
     def handle_invite_actions(self, invite_actions, request):
         '''handles the invite actions depending on the type of invites'''
         invite_handler = InviteActionHandler(invite_actions, request)
-        return invite_handler.handle_invite_actions()
-
+        invite_handler.handle_invite_actions()

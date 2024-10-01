@@ -52,14 +52,11 @@ class FetchWorkspaceInvites(APIView):
 class GetUpdateDeleteViewInvites(APIView):
     """fetches invite details"""
     serializer_class = UpdateInviteSerializer
-    # print(UpdateInviteSerializer.fields)
 
     def fetch_from_db(self, id):
         '''fetches from db to stop repetition'''
         queryset = Invite.objects.get(invite_uuid = id)
-        # print("Model Instance Attributes Before Serialization:", vars(queryset))
         serializer = self.serializer_class(queryset)
-        # print("Serializer Fields:", serializer.fields)
         return serializer
 
     def get(self, request, uuid):
@@ -75,7 +72,7 @@ class GetUpdateDeleteViewInvites(APIView):
         validated_invite = self.serializer_class().validate_invite_details(invite)
         if not validated_invite['is_valid']:
             return self.handle_invalid_invite_updates(validated_invite, invite)
-        self.update_invite(invite, request)
+        return self.update_invite(invite, request)
 
 
     def handle_invalid_invite_updates(self, validated_invite, invite):
@@ -94,22 +91,21 @@ class GetUpdateDeleteViewInvites(APIView):
 
 
     def update_invite(self, invite, request):
-        # print(request.data)
-        # print(invite['invite_host'])
         request_data = request.data
-        request_data['workspace_id'] = invite['workspace_id'].value
-        serializer = self.serializer_class(invite, data = request_data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        update_serializer = self.serializer_class(invite, data = request_data, partial=True)
+        update_serializer.is_valid(raise_exception=True)
+        import pdb; pdb.set_trace()
         try:
-            serializer.save()
-            print('we got here', serializer.data)
+            update_serializer.save()
+            print('we got here', update_serializer.data)
         except Exception as e:
             print('were in the exception now', e.__str__())
-            # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        invite_action_data = serializer.data
+        invite_action_data = update_serializer.data
         self.serializer_class().handle_invite_actions(invite_action_data, request)
-        return {'status': True, 'data': serializer.data}
+        response =  {'status': True, 'data': update_serializer.data}
+        return Response(response, status=status.HTTP_200_OK)
 
 
             

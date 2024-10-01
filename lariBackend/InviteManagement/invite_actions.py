@@ -31,11 +31,12 @@ class InviteActionHandler():
             'email': 'email',
             'invite_status': 'status'
         }
+        print(self.request_action.data)
         for param in self.update_parameters:
-            if self.request_action['param'] in param_map:
+            if param in self.request_action.data: # check if parameters are part of the request
                 self.updated_action = param_map[param]
-                self.updated_action_state = self.request_action['param']
-                return
+                self.updated_action_state = self.request_action.data[param]
+                break
             
 
     def __handle_status_update(self):
