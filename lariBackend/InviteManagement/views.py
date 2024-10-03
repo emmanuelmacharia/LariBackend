@@ -100,7 +100,7 @@ class GetUpdateDeleteViewInvites(APIView):
             print('we got here', update_serializer.data)
         except Exception as e:
             print('were in the exception now', e.__str__())
-            # return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         invite_action_data = update_serializer.data
         self.serializer_class().handle_invite_actions(invite_action_data, request)
