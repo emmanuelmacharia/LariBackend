@@ -49,10 +49,14 @@ class InviteSerializer(serializers.ModelSerializer):
 
 class UpdateInviteSerializer(serializers.ModelSerializer):
     '''handles updating invites (accepting and declining)'''
-
     class Meta:
         model = Invite
-        fields = '__all__'
+        fields = (
+            'id', 'invite_uuid', 'email_sent', 'workspace_id', 
+            'email', 'workspace_type', 'invite_status', 'invite_params',
+            'reminder', 'reminder_period', 'invite_expiry', 'reminder_count',
+            'reminder_threshold' 
+        )
         read_only_fields = ['id', 'invite_uuid', 'created_on', 'invite_host', 'workspace_id', 'email', 'workspace_type']
 
     def validate_invite_details(self, invite):
@@ -101,6 +105,10 @@ class UpdateInviteSerializer(serializers.ModelSerializer):
         if request_action['expired']:
             action = 4
         return {'invite_status': action}
+    
+    def update(self, instance, validated_data):
+        '''handles updating the database'''
+        return super(UpdateInviteSerializer, self).update(instance, validated_data)
 
 
     def handle_invite_actions(self, invite_actions, request):

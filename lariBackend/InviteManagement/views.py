@@ -66,9 +66,10 @@ class GetUpdateDeleteViewInvites(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({'message': 'Invite not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    def put(self, request, uuid):
+    def patch(self, request, uuid):
         "Accepts or rejects an invite"
         invite = self.fetch_from_db(uuid)
+        import pdb; pdb.set_trace()
         validated_invite = self.serializer_class().validate_invite_details(invite)
         if not validated_invite['is_valid']:
             return self.handle_invalid_invite_updates(validated_invite, invite)
@@ -79,7 +80,7 @@ class GetUpdateDeleteViewInvites(APIView):
         if validated_invite['requires_update'] == True:
                 update_action = validated_invite['update_actions']
 
-                request = self.serializer_class().create_update_invite_status_object(update_action)
+                request =UpdateInviteSerializer().create_update_invite_status_object(update_action)
                 saved_data = self.update_invite(invite, request)
                 response = {
                     'message': validated_invite['message'],
@@ -92,11 +93,12 @@ class GetUpdateDeleteViewInvites(APIView):
 
     def update_invite(self, invite, request):
         request_data = request.data
-        update_serializer = self.serializer_class(invite, data = request_data, partial=True)
+        # update_serializer = UpdateInviteSerializer(invite, data = request_data, partial=True)
+        update_serializer = UpdateInviteSerializer(invite, data = request_data)
         update_serializer.is_valid(raise_exception=True)
-        import pdb; pdb.set_trace()
+
         try:
-            update_serializer.save()
+            update_serializer.save(invite_status=request_data)
             print('we got here', update_serializer.data)
         except Exception as e:
             print('were in the exception now', e.__str__())
